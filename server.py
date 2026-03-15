@@ -60,42 +60,32 @@ def _normalize_states(
 
 
 def _build_llm(
-    model: str,
-    api_key: str | None,
-    api_key_env: str,
-    base_url: str | None,
-    temperature: float | None,
+    provider: str = "openai",
+    model: str = "gpt-4o-mini",
+    api_key: str | None = None,
+    api_key_env: str = "OPENAI_API_KEY",
+    config_path: str | None = None,
 ) -> Any:
     try:
         import l2p
-        from l2p.llm.openai import OPENAI
+        from l2p.llm.unified import UnifiedLLM
     except ImportError as exc:
         raise RuntimeError(
             "The `l2p` package is not installed in the active Python environment."
         ) from exc
 
-    resolved_api_key = api_key or os.getenv(api_key_env)
-    if not resolved_api_key:
-        raise ValueError(
-            f"Missing API key. Set `{api_key_env}` or pass `api_key` directly."
-        )
-
-    config_path = Path(l2p.__file__).resolve().parent / "llm" / "utils" / "openaiSDK.yaml"
-    kwargs: dict[str, Any] = {
-        "model": model,
-        "api_key": resolved_api_key,
-        "config_path": str(config_path),
-    }
-    if base_url is not None:
-        kwargs["base_url"] = base_url
-    if temperature is not None:
-        pass
-    return OPENAI(**kwargs)
+    return UnifiedLLM(
+        provider=provider,
+        model=model,
+        config_path=config_path
+        or str(Path(l2p.__file__).resolve().parent / "llm" / "utils" / "llm.yaml"),
+        api_key=api_key or os.getenv(api_key_env),
+    )
 
 
 mcp = FastMCP(
     name="l2p",
-    instructions="Wraps the external l2p package for PDDL extraction, generation, feedback, and planning.",
+    instructions="Wraps the external l2p package for PDDL domain and task formalization plus task generation.",
 )
 
 
@@ -110,16 +100,16 @@ def formalize_domain_predicates(
     types: dict | list[dict] | None = None,
     constants: dict | list[dict] | None = None,
     predicates: list[dict] | None = None,
+    provider: str = "openai",
     model: str = "gpt-4o-mini",
     api_key: str | None = None,
     api_key_env: str = "OPENAI_API_KEY",
-    base_url: str | None = None,
-    temperature: float | None = None,
+    config_path: str | None = None,
 ) -> dict:
     from l2p import DomainBuilder, Predicate
 
     result = DomainBuilder().formalize_predicates(
-        model=_build_llm(model, api_key, api_key_env, base_url, temperature),
+        model=_build_llm(provider, model, api_key, api_key_env, config_path),
         domain_desc=_read_text(
             domain_description, domain_description_path, "domain_description"
         ),
@@ -144,16 +134,16 @@ def formalize_task(
     predicates: list[dict] | None = None,
     constants: dict | list[dict] | None = None,
     functions: list[dict] | None = None,
+    provider: str = "openai",
     model: str = "gpt-4o-mini",
     api_key: str | None = None,
     api_key_env: str = "OPENAI_API_KEY",
-    base_url: str | None = None,
-    temperature: float | None = None,
+    config_path: str | None = None,
 ) -> dict:
     from l2p import Function, Predicate, TaskBuilder
 
     result = TaskBuilder().formalize_task(
-        model=_build_llm(model, api_key, api_key_env, base_url, temperature),
+        model=_build_llm(provider, model, api_key, api_key_env, config_path),
         problem_desc=_read_text(
             problem_description, problem_description_path, "problem_description"
         ),
@@ -196,59 +186,6 @@ def generate_task(
         goal=_normalize_states(goal),
     )
     return {"task": _serialize(task)}
-
-
-@mcp.tool(description="Request l2p feedback for a generated task or related output.")
-def task_feedback(
-    problem_description: str | None = None,
-    problem_description_path: str | None = None,
-    llm_output: str | None = None,
-    llm_output_path: str | None = None,
-    feedback_template: str | None = None,
-    feedback_template_path: str | None = None,
-    feedback_type: str = "llm",
-    types: dict | list[dict] | None = None,
-    predicates: list[dict] | None = None,
-    model: str = "gpt-4o-mini",
-    api_key: str | None = None,
-    api_key_env: str = "OPENAI_API_KEY",
-    base_url: str | None = None,
-    temperature: float | None = None,
-) -> dict:
-    from l2p import FeedbackBuilder, Predicate
-
-    result = FeedbackBuilder().task_feedback(
-        model=_build_llm(model, api_key, api_key_env, base_url, temperature),
-        problem_desc=_read_text(
-            problem_description, problem_description_path, "problem_description"
-        ),
-        llm_output=_read_text(llm_output, llm_output_path, "llm_output"),
-        feedback_template=_read_text(
-            feedback_template, feedback_template_path, "feedback_template"
-        ),
-        feedback_type=feedback_type,
-        types=types,
-        predicates=None if predicates is None else [Predicate(**p) for p in predicates],
-        functions=None,
-    )
-    return _serialize(result)
-
-
-@mcp.tool(description="Run Fast Downward via l2p's planner wrapper.")
-def run_fast_downward(
-    domain_file: str,
-    problem_file: str,
-    planner_path: str,
-    search_config: str | None = None,
-) -> dict:
-    from l2p.utils.pddl_planner import FastDownward
-
-    plan = FastDownward(planner_path).run_fast_downward(
-        domain_file=domain_file,
-        problem_file=problem_file,
-        search_alg=search_config or "lama-first",
-    )
-    return {"plan": _serialize(plan)}
 
 
 def main() -> None:
