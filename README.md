@@ -1,36 +1,63 @@
 # l2p-mcp
 
-Standalone MCP server that wraps the external [`l2p`](https://github.com/AI-Planning/l2p) package.
+Standalone MCP server that wraps deterministic parts of the external [`l2p`](https://github.com/AI-Planning/l2p) package.
 
-Files submitted in this repo:
+This draft is aimed at human-in-the-loop planning workflows where the MCP client already has model access. The server does not build or call an LLM. Instead, it helps the client:
 
-- `server.py`: the MCP server and all tool logic
-- `test_offline.py`: the offline unit test suite
+- parse partial domain and task fragments from model output
+- merge those fragments into evolving structured state
+- generate final PDDL domain and problem files
 
-The project does not vendor or clone `l2p`. It imports `l2p` at runtime and fails clearly if the package is missing.
+## Files
 
-## Tools
+- `server.py`: MCP tools and server entrypoint
+- `server_helpers.py`: parsing, merge, and normalization helpers used by the MCP tools
 
-The server exposes three MCP tools:
+## Tool Surface
 
-- `formalize_domain_predicates`
-- `formalize_task`
+The server currently exposes eight MCP tools:
+
+- `parse_domain_fragment`
+- `parse_action_fragment`
+- `parse_task_fragment`
+- `merge_domain`
+- `merge_task`
+- `generate_requirements`
+- `generate_domain`
 - `generate_task`
+
+## Intended Workflow
+
+1. The MCP client's model drafts a partial domain or task fragment.
+2. The server parses that text into structured data.
+3. The client merges the new fragment into its current domain/task state.
+4. The server generates final PDDL when needed.
+
+This supports incremental edits, so an agent or human can modify only the goal, one action, a few predicates, and so on without restarting the whole formulation process.
+
+## Examples
+
+`parse_domain_fragment`
+: Parse headings like `### TYPES`, `### CONSTANTS`, `### New Predicates`, and `### FUNCTIONS` from model output.
+
+`parse_action_fragment`
+: Parse a single action from `### Action Parameters`, `### Action Preconditions`, and `### Action Effects`.
+
+`parse_task_fragment`
+: Parse headings like `### OBJECTS`, `### INITIAL`, and `### GOAL`.
+
+`merge_domain` / `merge_task`
+: Merge a partial fragment into the current structured state. Use `replace_fields` when a field such as `goal` should be replaced instead of appended/upserted.
+
+`generate_domain` / `generate_task`
+: Produce final PDDL strings from the current structured state.
 
 ## Requirements
 
-- Python 3.10+
-- An environment where `l2p` can be installed
-- `llm` and any provider plugin you want to use through `l2p.llm.UnifiedLLM`
-- An API key only if your chosen provider requires one
-
-## Install
-
-Install `l2p`, `llm`, and any provider plugin separately in your environment before running the wrapper.
+- An environment where `l2p` is installed in the same interpreter used to run the server
+- `mcp`
 
 ## Run
-
-Run the MCP server over `stdio`:
 
 ```bash
 python3 server.py
@@ -43,42 +70,8 @@ python3 server.py
   "mcpServers": {
     "l2p": {
       "command": "python3",
-      "args": ["/absolute/path/to/server.py"],
-      "env": {
-        "OPENAI_API_KEY": "your-key"
-      }
+      "args": ["/absolute/path/to/server.py"]
     }
   }
 }
 ```
-
-## Tool behavior
-
-`formalize_domain_predicates`
-: Uses `l2p.DomainBuilder.formalize_predicates` to infer predicates from a natural-language domain description and prompt template. The server wraps models with `l2p.llm.UnifiedLLM`, so model selection is provider-agnostic.
-
-`formalize_task`
-: Uses `l2p.TaskBuilder.formalize_task` to convert a natural-language task description into structured PDDL task data.
-
-`generate_task`
-: Uses `l2p.TaskBuilder.generate_task` to emit a PDDL problem string from structured task components.
-
-Both LLM-backed tools accept `provider`, `model`, `api_key`, `api_key_env`, and `config_path` so they can target any provider configured in `l2p`'s `llm.yaml`.
-
-## Development
-
-Basic syntax check:
-
-```bash
-python3 -m py_compile server.py test_offline.py
-```
-
-## Testing
-
-Offline suite:
-
-```bash
-python3 -m unittest -v test_offline
-```
-
-Current offline status: all 8 offline tests pass.
