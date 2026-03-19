@@ -1,61 +1,107 @@
 # l2p-mcp
 
-Standalone MCP server that wraps deterministic parts of the external [`l2p`](https://github.com/AI-Planning/l2p) package.
+Standalone MCP server that wraps deterministic parts of the external [`l2p`](https://github.com/AI-Planning/l2p) package for human-in-the-loop planning workflows.
 
-This draft is aimed at human-in-the-loop planning workflows where the MCP client already has model access. The server does not build or call an LLM. Instead, it helps the client:
-
-- parse partial domain and task fragments from model output
-- merge those fragments into evolving structured state
-- generate final PDDL domain and problem files
+This repo assumes the MCP client already has model access. The model only needs to decide whether a change belongs to the domain or the task, then format the update using the tool docstring. After that, the server takes over: it parses the update, merges it into the current planning state, infers requirements when needed, and generates updated PDDL artifacts.
 
 ## Files
 
-- `server.py`: MCP tools and server entrypoint
-- `server_helpers.py`: parsing, merge, and normalization helpers used by the MCP tools
+- `server.py`
+  Exposes the MCP tools and starts the server
+- `server_helpers.py`
+  Contains the parsing, merge, and normalization logic used by the MCP tools
+- `test_offline.py`
+  Direct unit tests for parsing, merging, generation, and error handling
+- `test_mcp_offline.py`
+  End-to-end MCP tests that exercise the server over a temporary `stdio` client
 
 ## Tool Surface
 
-The server currently exposes eight MCP tools:
+The server exposes two high-level MCP tools:
 
-- `parse_domain_fragment`
-- `parse_action_fragment`
-- `parse_task_fragment`
-- `merge_domain`
-- `merge_task`
-- `generate_requirements`
-- `generate_domain`
-- `generate_task`
+- `update_domain`
+- `update_task`
+
+## What `update_domain` Does
+
+`update_domain` creates or updates domain state from model-written text. It supports:
+
+- `### TYPES`
+- `### CONSTANTS`
+- `### New Predicates`
+- `### FUNCTIONS`
+- zero, one, or many action updates using:
+  - `### Action Parameters`
+  - `### Action Preconditions`
+  - `### Action Effects`
+  - optional `## NEXT ACTION` separators
+
+The tool can:
+
+- start from an empty domain when no prior `domain` is provided
+- merge into an existing domain when `domain` is provided
+- infer `:requirements`
+- generate final domain PDDL when `domain_name` is provided
+
+For multi-action updates, action names can come from:
+
+- text placed before each action block
+- `action_name` passed as a list
+
+## What `update_task` Does
+
+`update_task` creates or updates task/problem state from model-written text. It supports:
+
+- `### OBJECTS`
+- `### INITIAL`
+- `### GOAL`
+
+Each section can contain zero, one, or many entries. The tool can:
+
+- start from an empty task when no prior `task` is provided
+- merge into an existing task when `task` is provided
+- replace fields like `goal` with `replace_fields`
+- generate final problem PDDL when `domain_name` and `problem_name` are provided
+
+Task generation requires the merged task to contain:
+
+- `objects`
+- `initial`
+- `goal`
 
 ## Intended Workflow
 
-1. The MCP client's model drafts a partial domain or task fragment.
-2. The server parses that text into structured data.
-3. The client merges the new fragment into its current domain/task state.
-4. The server generates final PDDL when needed.
+1. The user asks for a planning change
+2. The client-side model chooses `update_domain` or `update_task`
+3. The model writes the update using the format documented in the selected tool docstring
+4. The MCP server parses the update, merges it into the current structured state, and returns updated PDDL when enough information is present
 
-This supports incremental edits, so an agent or human can modify only the goal, one action, a few predicates, and so on without restarting the whole formulation process.
+This keeps the server stateless while still supporting incremental edits. A client can update only the goal, one action, several actions, a few predicates, or any other partial fragment without restarting the whole formulation process.
 
-## Examples
+## Tests
 
-`parse_domain_fragment`
-: Parse headings like `### TYPES`, `### CONSTANTS`, `### New Predicates`, and `### FUNCTIONS` from model output.
+Run the direct and MCP integration tests with:
 
-`parse_action_fragment`
-: Parse a single action from `### Action Parameters`, `### Action Preconditions`, and `### Action Effects`.
+```bash
+python3 -m unittest -v test_offline test_mcp_offline
+```
 
-`parse_task_fragment`
-: Parse headings like `### OBJECTS`, `### INITIAL`, and `### GOAL`.
+The current test suite covers:
 
-`merge_domain` / `merge_task`
-: Merge a partial fragment into the current structured state. Use `replace_fields` when a field such as `goal` should be replaced instead of appended/upserted.
-
-`generate_domain` / `generate_task`
-: Produce final PDDL strings from the current structured state.
+- domain creation and updates
+- task creation and updates
+- multi-action parsing and merging
+- empty action sections
+- type hierarchy parsing
+- file-based update input
+- MCP `stdio` tool calls
+- domain and task error paths
 
 ## Requirements
 
-- An environment where `l2p` is installed in the same interpreter used to run the server
+- An interpreter where `l2p` is installed
 - `mcp`
+- `python3` in the current environment if you want to match the tested interpreter here
 
 ## Run
 
@@ -63,7 +109,7 @@ This supports incremental edits, so an agent or human can modify only the goal, 
 python3 server.py
 ```
 
-## Example MCP client config
+## Example MCP Client Config
 
 ```json
 {
