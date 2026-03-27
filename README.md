@@ -80,7 +80,7 @@ This keeps the server stateless while still supporting incremental edits. A clie
 
 ## Tests
 
-Run the direct and MCP integration tests with:
+Run the direct and MCP integration tests from the root directory with:
 
 ```bash
 python3 -m unittest -v tests.test_offline tests.test_mcp_offline
