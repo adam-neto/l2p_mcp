@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from l2p import DomainBuilder, TaskBuilder
 from mcp.server.fastmcp import FastMCP
 

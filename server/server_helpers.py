@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from copy import deepcopy
 from l2p.utils.pddl_format import remove_comments
 from l2p.utils.pddl_parser import (
