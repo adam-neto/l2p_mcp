@@ -10,9 +10,9 @@ This repo assumes the MCP client already has model access. The model only needs 
   Exposes the MCP tools and starts the server
 - `server/server_helpers.py`
   Contains the parsing, merge, and normalization logic used by the MCP tools
-- `test/test_offline.py`
+- `tests/test_offline.py`
   Direct unit tests for parsing, merging, generation, and error handling
-- `test/test_mcp_offline.py`
+- `tests/test_mcp_offline.py`
   End-to-end MCP tests that exercise the server over a temporary `stdio` client
 
 ## Tool Surface
@@ -83,7 +83,7 @@ This keeps the server stateless while still supporting incremental edits. A clie
 Run the direct and MCP integration tests with:
 
 ```bash
-python3 -m unittest -v test.test_offline test.test_mcp_offline
+python3 -m unittest -v tests.test_offline tests.test_mcp_offline
 ```
 
 The current test suite covers:

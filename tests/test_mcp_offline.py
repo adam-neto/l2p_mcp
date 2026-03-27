@@ -15,7 +15,7 @@ import anyio
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
-from test_offline import (
+from tests.test_offline import (
     ACTION_FRAGMENT,
     DOMAIN_FRAGMENT,
     GOAL_ONLY_FRAGMENT,
