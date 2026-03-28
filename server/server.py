@@ -88,8 +88,8 @@ def update_domain(
     }
     ```
 
-    Use the predicate template exactly as `formalize_predicates.txt` describes
-    with one variable per type declaration and one predicate per list item:
+    Use the predicate template below with one variable per type declaration and
+    one predicate per list item:
 
     ### New Predicates
     ```text
@@ -119,9 +119,8 @@ def update_domain(
     For a single unnamed action block, pass one `action_name`. For multiple
     action blocks, either provide one action name before each block in the
     update text, or pass `action_name` as a list of names. The server supports
-    the `## NEXT ACTION` separator from `formalize_pddl_actions.txt`. For any
-    action subsection with zero updates, keep the heading and leave the fenced
-    block empty.
+    the `## NEXT ACTION` separator shown below. For any action subsection with
+    zero updates, keep the heading and leave the fenced block empty.
 
     Example multi action layout
 
