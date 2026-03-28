@@ -6,13 +6,24 @@ This repo assumes the MCP client already has model access. The model only needs 
 
 ## Files
 
-- `server/server.py`
-  Exposes the MCP tools and starts the server
-- `server/server_helpers.py`
+### `server/`
+
+- `server.py`
+  Defines the MCP tools, configures the HTTP transport defaults, and starts the server
+- `server_helpers.py`
   Contains the parsing, merge, and normalization logic used by the MCP tools
-- `tests/test_offline.py`
+- `Dockerfile`
+  Builds the Docker image for running the MCP server as a local service
+- `docker-compose.yml`
+  Defines the local Docker Compose service that exposes the MCP server on `localhost:8001`
+- `.dockerignore`
+  Keeps the Docker build context small by excluding caches and local development files
+
+### `tests/`
+
+- `test_offline.py`
   Direct unit tests for parsing, merging, generation, and error handling
-- `tests/test_mcp_offline.py`
+- `test_mcp_offline.py`
   End-to-end MCP tests that exercise the server over a temporary `stdio` client using the active Python interpreter
 
 ## Tool Surface
