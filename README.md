@@ -13,7 +13,7 @@ This repo assumes the MCP client already has model access. The model only needs 
 - `tests/test_offline.py`
   Direct unit tests for parsing, merging, generation, and error handling
 - `tests/test_mcp_offline.py`
-  End-to-end MCP tests that exercise the server over a temporary `stdio` client
+  End-to-end MCP tests that exercise the server over a temporary `stdio` client using the active Python interpreter
 
 ## Tool Surface
 
@@ -94,19 +94,69 @@ The current test suite covers:
 - empty action sections
 - type hierarchy parsing
 - file-based update input
-- MCP `stdio` tool calls
+- MCP tool calls
 - domain and task error paths
+
+## Docker
+
+This repo supports running the MCP server as a long-lived local Docker service over streamable HTTP.
+
+The container is configured to:
+
+- use `streamable-http`
+- listen on `0.0.0.0:8001` inside the container
+- expose the MCP endpoint at `/mcp`
+- restart automatically with `unless-stopped`
+
+Run the Dockerized server from the repo root with:
+
+```bash
+docker compose -f server/docker-compose.yml up -d --build
+```
+
+That starts the container in the background. Once it is running, the MCP endpoint is available at:
+
+```text
+http://localhost:8000/mcp
+```
+
+Helpful commands:
+
+- `docker compose -f server/docker-compose.yml logs -f`
+- `docker compose -f server/docker-compose.yml ps`
+- `docker compose -f server/docker-compose.yml restart`
+- `docker compose -f server/docker-compose.yml down`
+
+For the container to come back after a reboot, make sure Docker Desktop is configured to start automatically when you log in.
 
 ## Requirements
 
 - An interpreter where `l2p` is installed
 - `mcp`
-- `python3` in the current environment if you want to match the tested interpreter here
+- `python3` in the current environment
 
 ## Run
 
 ```bash
 python3 server/server.py
+```
+
+By default, that now starts the server with `streamable-http` on:
+
+```text
+http://127.0.0.1:8001/mcp
+```
+
+To override the host port or path:
+
+```bash
+MCP_TRANSPORT=streamable-http MCP_HOST=127.0.0.1 MCP_PORT=8000 python3 server/server.py
+```
+
+To force the older `stdio` transport for a client that wants to spawn the process directly:
+
+```bash
+MCP_TRANSPORT=stdio python3 server/server.py
 ```
 
 ## Example MCP Client Config
@@ -116,8 +166,13 @@ python3 server/server.py
   "mcpServers": {
     "l2p": {
       "command": "python3",
-      "args": ["/absolute/path/to/server/server.py"]
+      "args": ["/absolute/path/to/server/server.py"],
+      "env": {
+        "MCP_TRANSPORT": "stdio"
+      }
     }
   }
 }
 ```
+
+If your MCP client supports HTTP transports, point it at `http://localhost:8001/mcp` when the Docker container is running, or `http://127.0.0.1:8001/mcp` when you run the server directly.

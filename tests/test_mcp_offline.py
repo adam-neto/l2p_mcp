@@ -62,9 +62,10 @@ class McpOfflineTests(unittest.TestCase):
         env = dict(os.environ)
         pythonpath = env.get("PYTHONPATH")
         env["PYTHONPATH"] = "." if not pythonpath else f".:{pythonpath}"
+        env["MCP_TRANSPORT"] = "stdio"
 
         server_params = StdioServerParameters(
-            command="python3.10",
+            command=sys.executable,
             args=["server/server.py"],
             env=env,
             cwd=Path.cwd(),

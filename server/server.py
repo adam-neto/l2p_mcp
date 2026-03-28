@@ -1,3 +1,5 @@
+import os
+
 from l2p import DomainBuilder, TaskBuilder
 from mcp.server.fastmcp import FastMCP
 
@@ -16,6 +18,9 @@ mcp = FastMCP(
         "structured state, infer requirements when appropriate, and generate "
         "updated PDDL artifacts when names are provided."
     ),
+    host=os.getenv("MCP_HOST", "127.0.0.1"),
+    port=int(os.getenv("MCP_PORT", "8001")),
+    streamable_http_path=os.getenv("MCP_STREAMABLE_HTTP_PATH", "/mcp"),
 )
 
 
@@ -349,6 +354,11 @@ def update_task(
     return result
 
 
+def main() -> None:
+    transport = os.getenv("MCP_TRANSPORT", "streamable-http")
+    mcp.run(transport=transport)
+
+
 # Starts the MCP server when the file is run directly
 if __name__ == "__main__":
-    mcp.run()
+    main()
