@@ -99,7 +99,7 @@ The current test suite covers:
 
 ## Docker
 
-This repo supports running the MCP server as a long-lived local Docker service over streamable HTTP.
+This repo supports running the MCP server as a long-lived local Docker service over streamable HTTP. The Docker files live in the [`server/`](server/) directory.
 
 The container is configured to:
 
@@ -117,7 +117,7 @@ docker compose -f server/docker-compose.yml up -d --build
 That starts the container in the background. Once it is running, the MCP endpoint is available at:
 
 ```text
-http://localhost:8000/mcp
+http://localhost:8001/mcp
 ```
 
 Helpful commands:
