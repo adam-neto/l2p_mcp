@@ -15,7 +15,7 @@ This repo assumes the MCP client already has model access. The model only needs 
 - `Dockerfile`
   Builds the Docker image for running the MCP server as a local service
 - `docker-compose.yml`
-  Defines the local Docker Compose service that exposes the MCP server on `localhost:8001`
+  Defines the local Docker Compose service that exposes the MCP server on `localhost:8002`
 - `.dockerignore`
   Keeps the Docker build context small by excluding caches and local development files
 
@@ -115,7 +115,7 @@ This repo supports running the MCP server as a long-lived local Docker service o
 The container is configured to:
 
 - use `streamable-http`
-- listen on `0.0.0.0:8001` inside the container
+- listen on `0.0.0.0:8002` inside the container
 - expose the MCP endpoint at `/mcp`
 - restart automatically with `unless-stopped`
 
@@ -128,7 +128,7 @@ docker compose -f server/docker-compose.yml up -d --build
 That starts the container in the background. Once it is running, the MCP endpoint is available at:
 
 ```text
-http://localhost:8001/mcp
+http://localhost:8002/mcp
 ```
 
 Helpful commands:
@@ -155,13 +155,13 @@ python3 server/server.py
 By default, that now starts the server with `streamable-http` on:
 
 ```text
-http://127.0.0.1:8001/mcp
+http://127.0.0.1:8002/mcp
 ```
 
 To override the host port or path:
 
 ```bash
-MCP_TRANSPORT=streamable-http MCP_HOST=127.0.0.1 MCP_PORT=8000 python3 server/server.py
+MCP_TRANSPORT=streamable-http MCP_HOST=127.0.0.1 MCP_PORT=8002 python3 server/server.py
 ```
 
 To force the older `stdio` transport for a client that wants to spawn the process directly:
@@ -186,4 +186,4 @@ MCP_TRANSPORT=stdio python3 server/server.py
 }
 ```
 
-If your MCP client supports HTTP transports, point it at `http://localhost:8001/mcp` when the Docker container is running, or `http://127.0.0.1:8001/mcp` when you run the server directly.
+If your MCP client supports HTTP transports, point it at `http://localhost:8002/mcp` when the Docker container is running, or `http://127.0.0.1:8002/mcp` when you run the server directly.

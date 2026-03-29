@@ -19,7 +19,7 @@ mcp = FastMCP(
         "updated PDDL artifacts when names are provided."
     ),
     host=os.getenv("MCP_HOST", "127.0.0.1"),
-    port=int(os.getenv("MCP_PORT", "8001")),
+    port=int(os.getenv("MCP_PORT", "8002")),
     streamable_http_path=os.getenv("MCP_STREAMABLE_HTTP_PATH", "/mcp"),
 )
 
