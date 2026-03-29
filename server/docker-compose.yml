@@ -1,7 +1,8 @@
 services:
-  mcp:
+  l2p-mcp:
+    image: l2p-mcp-server
     build: .
-    container_name: mcp
+    container_name: l2p-mcp
     restart: unless-stopped
     ports:
       - "127.0.0.1:8002:8002"
